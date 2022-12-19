@@ -9,3 +9,4 @@ ideas not explored
 - Proper abstraction for network groups to keep scaling with depth
 - Add attribute to stop business to person transactions
 - add protection against clashing uuid keys
+- add connection strength to edges for payment likelihood
