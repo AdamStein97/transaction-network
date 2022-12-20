@@ -1,4 +1,5 @@
 import random
+from typing import Set
 import uuid
 
 import networkx as nx
@@ -6,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 from src.config import Config
-from src.local_networks import LocalNetwork
+from src.local_network import LocalNetwork
 from src.utils import add_random_connections_to_network
 
 
@@ -30,9 +31,9 @@ class LargeNetwork:
                 Number of random connections between different local networks to prevent complete separation.
                 Defaults to 20.
         """
-        self.business_names = set()
+        self._business_names = set()
 
-        self.large_network = self._link_local_networks(
+        self._large_network = self._link_local_networks(
             num_local_networks, num_connections_per_local_network, **kwargs
         )
 
@@ -56,12 +57,12 @@ class LargeNetwork:
         local_network = LocalNetwork(**kwargs)
         large_network = local_network.get_graph()
         # keep track of businesses
-        self.business_names |= local_network.get_businesses()
+        self._business_names |= local_network.get_businesses()
         for _ in tqdm(range(num_social_networks - 1)):
             # Create starting local network
             new_local_network = LocalNetwork(**kwargs)
             # keep track of businesses
-            self.business_names |= new_local_network.get_businesses()
+            self._business_names |= new_local_network.get_businesses()
             # combine
             large_network = nx.union(large_network, new_local_network.get_graph())
 
@@ -69,7 +70,7 @@ class LargeNetwork:
         large_network = add_random_connections_to_network(
             large_network,
             num_connections_per_network * num_social_networks,
-            exclude_nodes=self.business_names,
+            exclude_nodes=self._business_names,
         )
 
         return large_network
@@ -83,7 +84,7 @@ class LargeNetwork:
         """
 
         # get names of all individuals
-        customer_nodes = list(set(self.large_network.nodes) - self.business_names)
+        customer_nodes = list(set(self._large_network.nodes) - self._business_names)
         num_nodes = len(customer_nodes)
 
         # sample from a normal distribution to decide business popularity
@@ -106,9 +107,21 @@ class LargeNetwork:
             # sample users from network who shop at the business
             users = random.sample(customer_nodes, k=num_users)
             business_name = str(uuid.uuid4())
-            self.business_names.add(business_name)
+            self._business_names.add(business_name)
 
-            self.large_network.add_node(business_name)
+            self._large_network.add_node(business_name)
 
             for user in users:
-                self.large_network.add_edge(user, business_name)
+                self._large_network.add_edge(user, business_name)
+
+    def get_graph(self) -> nx.DiGraph:
+        """
+        Gets the networkx graph
+        """
+        return self._large_network
+
+    def get_businesses(self) -> Set[str]:
+        """
+        Gets the names of all the local businesses
+        """
+        return self._business_names
