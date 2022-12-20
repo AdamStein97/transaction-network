@@ -1,6 +1,6 @@
 import random
-from typing import Set
 import uuid
+from typing import Set
 
 import networkx as nx
 import numpy as np
